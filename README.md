@@ -38,4 +38,4 @@ This project helps users create, organize, track, and manage their tasks efficie
 
 ## Author
 
-Student Project
+SINDUJA S
