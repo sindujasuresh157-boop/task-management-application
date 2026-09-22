@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management Application</title>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        header {
+            background: #1689e8;
+            color: white;
+            text-align: center;
+            padding: 28px 15px;
+        }
+
+        header h1 {
+            margin-bottom: 8px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 25px auto;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        .auth-box {
+            max-width: 450px;
+            margin: 40px auto;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0 15px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            font-size: 15px;
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        button {
+            border: none;
+            padding: 11px 18px;
+            border-radius: 7px;
+            cursor: pointer;
+            background: #1689e8;
+            color: white;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .danger {
+            background: #e53935;
+        }
+
+        .edit {
+            background: #f39c12;
+        }
+
+        .logout {
+            background: #555;
+        }
+
+        .status-btn {
+            background: #27ae60;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .dashboard-card {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        }
+
+        .dashboard-card p {
+            color: #1689e8;
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .search-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+        }
+
+        .task {
+            border: 1px solid #ddd;
+            border-left: 5px solid #1689e8;
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 15px;
+            background: #fafafa;
+        }
+
+        .task h3 {
+            margin-bottom: 8px;
+        }
+
+        .task p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .user-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 700px) {
+            .dashboard,
+            .form-row,
+            .search-row {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>📋 Task Management Application</h1>
+    <p>Create, manage and track your tasks</p>
+</header>
+
+
+<!-- ================= LOGIN / SIGN UP ================= -->
+
+<section id="authSection" class="container">
+
+    <div class="card auth-box">
+
+        <h2>🔐 Account</h2>
+
+        <br>
+
+        <label>Email</label>
+        <input
+            type="email"
+            id="email"
+            placeholder="Enter your email"
+        >
+
+        <label>Password</label>
+        <input
+            type="password"
+            id="password"
+            placeholder="Enter password"
+        >
+
+        <button onclick="signUp()">
+            📝 Create Account
+        </button>
+
+        <button onclick="login()">
+            🔑 Login
+        </button>
+
+        <p id="authMessage" class="message"></p>
+
+    </div>
+
+</section>
+
+
+<!-- ================= MAIN APPLICATION ================= -->
+
+<section id="appSection" class="container hidden">
+
+    <!-- USER -->
+
+    <div class="card">
+
+        <div class="user-box">
+
+            <div>
+                <h3>Welcome! 👋</h3>
+                <p id="userEmail"></p>
+            </div>
+
+            <button class="logout" onclick="logout()">
+                🚪 Logout
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- DASHBOARD -->
+
+    <div class="dashboard">
+
+        <div class="dashboard-card">
+            <h3>Total Tasks</h3>
+            <p id="totalTasks">0</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>Pending</h3>
+            <p id="pendingTasks">0</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>In Progress</h3>
+            <p id="inProgressTasks">0</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>Completed</h3>
+            <p id="completedTasks">0</p>
+        </div>
+
+    </div>
+
+
+    <!-- ADD TASK -->
+
+    <div class="card">
+
+        <h2>➕ Add New Task</h2>
+
+        <label>Task Title</label>
+
+        <input
+            type="text"
+            id="taskTitle"
+            placeholder="Enter task title"
+        >
+
+        <label>Description</label>
+
+        <textarea
+            id="description"
+            placeholder="Enter task description"
+        ></textarea>
+
+        <div class="form-row">
+
+            <div>
+
+                <label>Due Date</label>
+
+                <input
+                    type="date"
+                    id="dueDate"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label>Priority</label>
+
+                <select id="priority">
+
+                    <option value="Low">
+                        🟢 Low
+                    </option>
+
+                    <option value="Medium" selected>
+                        🟡 Medium
+                    </option>
+
+                    <option value="High">
+                        🔴 High
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <label>Status</label>
+
+                <select id="status">
+
+                    <option value="Pending">
+                        ⏳ Pending
+                    </option>
+
+                    <option value="In Progress">
+                        🔄 In Progress
+                    </option>
+
+                    <option value="Completed">
+                        ✅ Completed
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+        <button onclick="addTask()">
+            ➕ Add Task
+        </button>
+
+    </div>
+
+
+    <!-- TASK LIST -->
+
+    <div class="card">
+
+        <h2>📋 My Tasks</h2>
+
+        <br>
+
+        <div class="search-row">
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="🔍 Search tasks..."
+                oninput="displayTasks()"
+            >
+
+            <select
+                id="filterPriority"
+                onchange="displayTasks()"
+            >
+
+                <option value="All">
+                    ⭐ All Priorities
+                </option>
+
+                <option value="High">
+                    🔴 High
+                </option>
+
+                <option value="Medium">
+                    🟡 Medium
+                </option>
+
+                <option value="Low">
+                    🟢 Low
+                </option>
+
+            </select>
+
+        </div>
+
+        <div id="taskList"></div>
+
+    </div>
+
+</section>
+
+
+<script>
+
+/* =====================================================
+   SUPABASE CONNECTION
+   ===================================================== */
+
+const SUPABASE_URL =
+    "https://drertjkyqlbpsevjwqwj.supabase.co";
+
+
+// IMPORTANT:
+// Paste your Supabase PUBLISHABLE key between the quotes.
+// DO NOT use the Secret key.
+
+const SUPABASE_KEY =
+    "sb_publishable_UxS9Th3xvqeFDVEz7Uc0HQ_NzKunbDZ";
+
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+let tasks = [];
+
+
+/* =====================================================
+   SIGN UP
+   ===================================================== */
+
+async function signUp() {
+
+    const email =
+        document.getElementById("email").value.trim();
+
+    const password =
+        document.getElementById("password").value;
+
+    if (!email || !password) {
+
+        showMessage(
+            "Please enter email and password."
+        );
+
+        return;
+    }
+
+    if (password.length < 6) {
+
+        showMessage(
+            "Password must contain at least 6 characters."
+        );
+
+        return;
+    }
+
+    const { data, error } =
+        await supabaseClient.auth.signUp({
+
+            email: email,
+
+            password: password
+
+        });
+
+
+    if (error) {
+
+        showMessage(
+            "❌ " + error.message
+        );
+
+        return;
+    }
+
+
+    showMessage(
+        "✅ Account created successfully. Check your email if confirmation is required."
+    );
+}
+
+
+/* =====================================================
+   LOGIN
+   ===================================================== */
+
+async function login() {
+
+    const email =
+        document.getElementById("email").value.trim();
+
+    const password =
+        document.getElementById("password").value;
+
+
+    if (!email || !password) {
+
+        showMessage(
+            "Please enter email and password."
+        );
+
+        return;
+    }
+
+
+    const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+
+            email: email,
+
+            password: password
+
+        });
+
+
+    if (error) {
+
+        showMessage(
+            "❌ " + error.message
+        );
+
+        return;
+    }
+
+
+    showApp(data.user);
+}
+
+
+/* =====================================================
+   LOGOUT
+   ===================================================== */
+
+async function logout() {
+
+    await supabaseClient.auth.signOut();
+
+    tasks = [];
+
+    document
+        .getElementById("appSection")
+        .classList.add("hidden");
+
+    document
+        .getElementById("authSection")
+        .classList.remove("hidden");
+
+}
+
+
+/* =====================================================
+   SHOW APPLICATION
+   ===================================================== */
+
+function showApp(user) {
+
+    document
+        .getElementById("authSection")
+        .classList.add("hidden");
+
+
+    document
+        .getElementById("appSection")
+        .classList.remove("hidden");
+
+
+    document
+        .getElementById("userEmail")
+        .textContent =
+        user.email;
+
+
+    loadTasks();
+}
+
+
+/* =====================================================
+   ADD TASK
+   ===================================================== */
+
+async function addTask() {
+
+    const {
+        data: {
+            user
+        }
+    } =
+        await supabaseClient.auth.getUser();
+
+
+    if (!user) {
+
+        alert("Please login first.");
+
+        return;
+    }
+
+
+    const title =
+        document
+            .getElementById("taskTitle")
+            .value
+            .trim();
+
+
+    const description =
+        document
+            .getElementById("description")
+            .value
+            .trim();
+
+
+    const dueDate =
+        document
+            .getElementById("dueDate")
+            .value;
+
+
+    const priority =
+        document
+            .getElementById("priority")
+            .value;
+
+
+    const status =
+        document
+            .getElementById("status")
+            .value;
+
+
+    if (!title) {
+
+        alert("Please enter a task title.");
+
+        return;
+    }
+
+
+    const { error } =
+        await supabaseClient
+            .from("tasks")
+            .insert({
+
+                user_id: user.id,
+
+                title: title,
+
+                description: description,
+
+                due_date:
+                    dueDate || null,
+
+                priority: priority,
+
+                status: status
+
+            });
+
+
+    if (error) {
+
+        alert(
+            "Error adding task: " +
+            error.message
+        );
+
+        return;
+    }
+
+
+    document
+        .getElementById("taskTitle")
+        .value = "";
+
+    document
+        .getElementById("description")
+        .value = "";
+
+    document
+        .getElementById("dueDate")
+        .value = "";
+
+
+    await loadTasks();
+
+    alert("✅ Task added successfully!");
+}
+
+
+/* =====================================================
+   LOAD TASKS
+   ===================================================== */
+
+async function loadTasks() {
+
+    const {
+        data: {
+            user
+        }
+    } =
+        await supabaseClient.auth.getUser();
+
+
+    if (!user) return;
+
+
+    const { data, error } =
+        await supabaseClient
+            .from("tasks")
+            .select("*")
+            .eq("user_id", user.id)
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
+
+
+    if (error) {
+
+        console.error(error);
+
+        alert(
+            "Could not load tasks: " +
+            error.message
+        );
+
+        return;
+    }
+
+
+    tasks = data || [];
+
+
+    displayTasks();
+
+    updateDashboard();
+}
+
+
+/* =====================================================
+   DISPLAY TASKS
+   ===================================================== */
+
+function displayTasks() {
+
+    const taskList =
+        document.getElementById(
+            "taskList"
+        );
+
+
+    const searchText =
+        document
+            .getElementById(
+                "searchInput"
+            )
+            .value
+            .toLowerCase()
+            .trim();
+
+
+    const selectedPriority =
+        document
+            .getElementById(
+                "filterPriority"
+            )
+            .value;
+
+
+    taskList.innerHTML = "";
+
+
+    const filteredTasks =
+        tasks.filter(function(task) {
+
+            const title =
+                task.title || "";
+
+            const description =
+                task.description || "";
+
+
+            const matchesSearch =
+                title
+                    .toLowerCase()
+                    .includes(searchText)
+                ||
+                description
+                    .toLowerCase()
+                    .includes(searchText);
+
+
+            const matchesPriority =
+                selectedPriority === "All"
+                ||
+                task.priority ===
+                selectedPriority;
+
+
+            return (
+                matchesSearch &&
+                matchesPriority
+            );
+
+        });
+
+
+    if (filteredTasks.length === 0) {
+
+        taskList.innerHTML =
+            "<p>📋 No tasks found.</p>";
+
+        return;
+    }
+
+
+    filteredTasks.forEach(function(task) {
+
+        const div =
+            document.createElement("div");
+
+
+        div.className = "task";
+
+
+        div.innerHTML = `
+
+            <h3>
+                ${escapeHTML(task.title)}
+            </h3>
+
+            <p>
+                ${escapeHTML(
+                    task.description ||
+                    "No description"
+                )}
+            </p>
+
+            <p>
+                📅 ${task.due_date || "No date"}
+                &nbsp; | &nbsp;
+                ⭐ ${escapeHTML(task.priority)}
+                &nbsp; | &nbsp;
+                📌 ${escapeHTML(task.status)}
+            </p>
+
+            <button
+                class="status-btn"
+                onclick="changeStatus('${task.id}')">
+                🔄 Change Status
+            </button>
+
+            <button
+                class="edit"
+                onclick="editTask('${task.id}')">
+                ✏️ Edit
+            </button>
+
+            <button
+                class="danger"
+                onclick="deleteTask('${task.id}')">
+                🗑️ Delete
+            </button>
+
+        `;
+
+
+        taskList.appendChild(div);
+
+    });
+}
+
+
+/* =====================================================
+   EDIT TASK
+   ===================================================== */
+
+async function editTask(id) {
+
+    const task =
+        tasks.find(function(t) {
+
+            return t.id === id;
+
+        });
+
+
+    if (!task) return;
+
+
+    const newTitle =
+        prompt(
+            "Enter new task title:",
+            task.title
+        );
+
+
+    if (newTitle === null) return;
+
+
+    if (!newTitle.trim()) {
+
+        alert(
+            "Title cannot be empty."
+        );
+
+        return;
+    }
+
+
+    const newDescription =
+        prompt(
+            "Enter new description:",
+            task.description || ""
+        );
+
+
+    const { error } =
+        await supabaseClient
+            .from("tasks")
+            .update({
+
+                title:
+                    newTitle.trim(),
+
+                description:
+                    newDescription === null
+                        ? task.description
+                        : newDescription.trim()
+
+            })
+            .eq("id", id);
+
+
+    if (error) {
+
+        alert(
+            "Error updating task: " +
+            error.message
+        );
+
+        return;
+    }
+
+
+    await loadTasks();
+}
+
+
+/* =====================================================
+   CHANGE STATUS
+   ===================================================== */
+
+async function changeStatus(id) {
+
+    const task =
+        tasks.find(function(t) {
+
+            return t.id === id;
+
+        });
+
+
+    if (!task) return;
+
+
+    let newStatus;
+
+
+    if (task.status === "Pending") {
+
+        newStatus =
+            "In Progress";
+
+    }
+    else if (
+        task.status === "In Progress"
+    ) {
+
+        newStatus =
+            "Completed";
+
+    }
+    else {
+
+        newStatus =
+            "Pending";
+
+    }
+
+
+    const { error } =
+        await supabaseClient
+            .from("tasks")
+            .update({
+
+                status: newStatus
+
+            })
+            .eq("id", id);
+
+
+    if (error) {
+
+        alert(
+            "Error changing status: " +
+            error.message
+        );
+
+        return;
+    }
+
+
+    await loadTasks();
+}
+
+
+/* =====================================================
+   DELETE TASK
+   ===================================================== */
+
+async function deleteTask(id) {
+
+    const confirmDelete =
+        confirm(
+            "Are you sure you want to delete this task?"
+        );
+
+
+    if (!confirmDelete) return;
+
+
+    const { error } =
+        await supabaseClient
+            .from("tasks")
+            .delete()
+            .eq("id", id);
+
+
+    if (error) {
+
+        alert(
+            "Error deleting task: " +
+            error.message
+        );
+
+        return;
+    }
+
+
+    await loadTasks();
+}
+
+
+/* =====================================================
+   DASHBOARD
+   ===================================================== */
+
+function updateDashboard() {
+
+    document
+        .getElementById("totalTasks")
+        .textContent =
+        tasks.length;
+
+
+    document
+        .getElementById("pendingTasks")
+        .textContent =
+        tasks.filter(function(task) {
+
+            return task.status ===
+                "Pending";
+
+        }).length;
+
+
+    document
+        .getElementById("inProgressTasks")
+        .textContent =
+        tasks.filter(function(task) {
+
+            return task.status ===
+                "In Progress";
+
+        }).length;
+
+
+    document
+        .getElementById("completedTasks")
+        .textContent =
+        tasks.filter(function(task) {
+
+            return task.status ===
+                "Completed";
+
+        }).length;
+}
+
+
+/* =====================================================
+   MESSAGE
+   ===================================================== */
+
+function showMessage(message) {
+
+    document
+        .getElementById("authMessage")
+        .textContent =
+        message;
+}
+
+
+/* =====================================================
+   HTML SECURITY
+   ===================================================== */
+
+function escapeHTML(text) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        text || "";
+
+    return div.innerHTML;
+}
+
+
+/* =====================================================
+   CHECK LOGIN
+   ===================================================== */
+
+async function checkUser() {
+
+    const {
+        data: {
+            user
+        }
+    } =
+        await supabaseClient.auth.getUser();
+
+
+    if (user) {
+
+        showApp(user);
+
+    }
+
+}
+
+
+checkUser();
+
+</script>
+
+</body>
+</html>
